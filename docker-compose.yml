@@ -1,4 +1,10 @@
+# Containerized Homelab Stack
+# VPN, DNS Filtering, Reverse Proxy for Raspberry Pi 5
+# https://github.com/your-repo
+
 services:
+  # Unbound: Recursive DNS resolver with DNSSEC validation
+  # Provides secure DNS resolution independent of ISP
   unbound:
     image: mvance/unbound-rpi:latest
     container_name: unbound
@@ -10,6 +16,9 @@ services:
     volumes:
       - ./unbound:/opt/unbound/etc/unbound
 
+  # Pi-hole: DNS filtering and ad-blocking service
+  # Blocks ads at the DNS level across your network
+  # Depends on Unbound for recursive DNS lookups
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
@@ -34,53 +43,61 @@ services:
     depends_on:
       - unbound
 
+  # WireGuard: VPN server for secure remote access
+  # Generates peer configs for connecting phones, laptops, etc.
+  # Requires NET_ADMIN capabilities for networking
   wireguard:
-      image: lscr.io/linuxserver/wireguard:latest
-      container_name: wireguard
-      cap_add:
-        - NET_ADMIN
-        - SYS_MODULE
-      sysctls:
-        - net.ipv6.conf.all.disable_ipv6=0
-        - net.ipv6.conf.all.forwarding=1
-        - net.ipv6.conf.all.proxy_ndp=1
-      environment:
-        - PUID=1000
-        - PGID=1000
-        - TZ=${TZ}
-        - SERVERURL=${WIREGUARD_SERVER_URL}
-        - SERVERPORT=51820
-        - PEERS=${WIREGUARD_PEERS}
-        - PEERDNS=${WIREGUARD_DNS}
-        - ALLOWEDIPS=0.0.0.0/0, ::/0
-        - INTERNAL_CONTROL_CONFIG=true
-      ports:
-        - "51820:51820/udp"
-      networks:
-        private_net:
-          ipv4_address: 10.2.0.4
-          ipv6_address: fd00:cafe:c01a::4
-      restart: unless-stopped
-      volumes:
-        - ./wireguard:/config
+    image: lscr.io/linuxserver/wireguard:latest
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv6.conf.all.forwarding=1
+      - net.ipv6.conf.all.proxy_ndp=1
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - SERVERURL=${WIREGUARD_SERVER_URL}
+      - SERVERPORT=51820
+      - PEERS=${WIREGUARD_PEERS}
+      - PEERDNS=${WIREGUARD_DNS}
+      - ALLOWEDIPS=0.0.0.0/0, ::/0
+      - INTERNAL_CONTROL_CONFIG=true
+    ports:
+      - "51820:51820/udp"
+    networks:
+      private_net:
+        ipv4_address: 10.2.0.4
+        ipv6_address: fd00:cafe:c01a::4
+    restart: unless-stopped
+    volumes:
+      - ./wireguard:/config
 
+  # Nginx Proxy Manager: Reverse proxy with SSL/TLS certificate management
+  # Handles incoming HTTP/HTTPS traffic and routes to appropriate services
+  # Automatically manages Let's Encrypt certificates
   nginx-proxy-manager:
-     image: 'jc21/nginx-proxy-manager:latest'
-     container_name: nginx-proxy-manager
-     restart: unless-stopped
-     ports:
-       - '80:80'    # Public HTTP
-       - '443:443'  # Public HTTPS
-       - '81:81'    # Admin Dashboard Port
-     volumes:
-       - ./nginx/data:/data
-       - ./nginx/letsencrypt:/etc/letsencrypt
-     networks:
-       private_net:
-         ipv4_address: 10.2.0.5
-         ipv6_address: fd00:cafe:c01a::5
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - '80:80' # Public HTTP
+      - '443:443' # Public HTTPS
+      - '81:81' # Admin Dashboard Port
+    volumes:
+      - ./nginx/data:/data
+      - ./nginx/letsencrypt:/etc/letsencrypt
+    networks:
+      private_net:
+        ipv4_address: 10.2.0.5
+        ipv6_address: fd00:cafe:c01a::5
 
-
+# Private isolated Docker network for all services
+# IPv4: 10.2.0.0/24 (services assigned 10.2.0.2 - 10.2.0.5)
+# IPv6: fd00:cafe:c01a::/64 with proxy NDP enabled
 networks:
   private_net:
     enable_ipv6: true
