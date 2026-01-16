@@ -1,6 +1,6 @@
 # Containerized-Homelab
 Simple but powerful Docker-based homelab stack for privacy, security, and local DNS services.
-Features including VPN, Recursive DNS, Local DNS, DNS Sinkhole (Network level Ad and Tracker Blocker), and Reverse Proxy.
+Features include VPN, Recursive DNS, Local DNS, DNS Sinkhole (Network level Ad and Tracker Blocker), and Reverse Proxy.
 Created for personal use and deployed on a raspberry pi 5.
 
 ## Architecture Overview
@@ -37,7 +37,7 @@ Created for personal use and deployed on a raspberry pi 5.
 Features:
 - Nginx Proxy Manager, acting as a configurable front door for the whole stack. I mainly use this for configuring SSL and local DNS, but it's a very powerful tool.
 - The Pihole acts as a DNS sinkhole, referring undesirable traffic to the internet void. This blocks many (but not all!) ads, trackers, and even potentially malicious requests. It can be configured to operate at a router level, blocking requests from smart devices that do not support plugin adblockers.
-- Unbound provides DNS security and some privacy features. It acts as a recurive DNS resolver, meaning that it goes down the entire referal path until it confirms with the authoritative nameserver that it's correct, which can prevent spoofing and means that no individual company will have your entire query history. Note that your ISP can see your requests, but not the DNS servers. A traditional VPN service is still better if the goal is to obscure your traffic. 
+- Unbound provides DNS security and some privacy features. It acts as a recursive DNS resolver, meaning that it goes down the entire referral path until it confirms with the authoritative nameserver that it's correct, which can prevent spoofing and means that no individual company will have your entire query history. Note that your ISP can see your requests, but not the DNS servers. A traditional VPN service is still better if the goal is to obscure your traffic. 
 - WireGuard allows you to tunnel in to access any part of your network remotely, including all the DNS features - Pihole on the go!
 
 *Please Note:
