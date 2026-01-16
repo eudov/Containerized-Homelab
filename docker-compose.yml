@@ -1,0 +1,93 @@
+services:
+  unbound:
+    image: mvance/unbound-rpi:latest
+    container_name: unbound
+    restart: unless-stopped
+    networks:
+      private_net:
+        ipv4_address: 10.2.0.2
+        ipv6_address: fd00:cafe:c01a::2
+    volumes:
+      - ./unbound:/opt/unbound/etc/unbound
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    networks:
+      private_net:
+        ipv4_address: 10.2.0.3
+        ipv6_address: fd00:cafe:c01a::3
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8080:80/tcp"
+    environment:
+      - TZ=${TZ}
+      - WEBPASSWORD=${PIHOLE_PASSWORD}
+      - PIHOLE_DNS_=10.2.0.2#5335
+      - DNSSEC=true
+      - FTLCONF_dns_listeningMode=all
+      - ServerIPv6=fd00:cafe:c01a::3
+    volumes:
+      - ./pihole:/etc/pihole
+    depends_on:
+      - unbound
+
+  wireguard:
+      image: lscr.io/linuxserver/wireguard:latest
+      container_name: wireguard
+      cap_add:
+        - NET_ADMIN
+        - SYS_MODULE
+      sysctls:
+        - net.ipv6.conf.all.disable_ipv6=0
+        - net.ipv6.conf.all.forwarding=1
+        - net.ipv6.conf.all.proxy_ndp=1
+      environment:
+        - PUID=1000
+        - PGID=1000
+        - TZ=${TZ}
+        - SERVERURL=${WIREGUARD_SERVER_URL}
+        - SERVERPORT=51820
+        - PEERS=${WIREGUARD_PEERS}
+        - PEERDNS=${WIREGUARD_DNS}
+        - ALLOWEDIPS=0.0.0.0/0, ::/0
+        - INTERNAL_CONTROL_CONFIG=true
+      ports:
+        - "51820:51820/udp"
+      networks:
+        private_net:
+          ipv4_address: 10.2.0.4
+          ipv6_address: fd00:cafe:c01a::4
+      restart: unless-stopped
+      volumes:
+        - ./wireguard:/config
+
+  nginx-proxy-manager:
+     image: 'jc21/nginx-proxy-manager:latest'
+     container_name: nginx-proxy-manager
+     restart: unless-stopped
+     ports:
+       - '80:80'    # Public HTTP
+       - '443:443'  # Public HTTPS
+       - '81:81'    # Admin Dashboard Port
+     volumes:
+       - ./nginx/data:/data
+       - ./nginx/letsencrypt:/etc/letsencrypt
+     networks:
+       private_net:
+         ipv4_address: 10.2.0.5
+         ipv6_address: fd00:cafe:c01a::5
+
+
+networks:
+  private_net:
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.2.0.0/24
+          gateway: 10.2.0.1
+        - subnet: fd00:cafe:c01a::/64
+          gateway: fd00:cafe:c01a::1
