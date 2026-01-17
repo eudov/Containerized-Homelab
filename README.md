@@ -1,5 +1,5 @@
 # Containerized-Homelab
-Simple but powerful Docker-based homelab stack for privacy, security, and local DNS services.
+Docker-based homelab stack for privacy, security, and local DNS services.
 Features include VPN, Recursive DNS, Local DNS, DNS Sinkhole (Network level Ad and Tracker Blocker), and Reverse Proxy.
 Created for personal use and deployed on a raspberry pi 5.
 
